@@ -121,20 +121,11 @@ public class PlotController {
             @RequestParam(required = false) String title,
             @RequestParam(required = false) String location,
             @RequestParam(required = false) BigDecimal minPrice,
-            @RequestParam(required = false) BigDecimal maxPrice) {
-
-        List<plot> plots;
-
-        if (title != null && !title.isEmpty()) {
-            plots = plotService.searchPlotsByTitle(title);
-        } else if (location != null && !location.isEmpty()) {
-            plots = plotService.searchPlotsByLocation(location);
-        } else if (minPrice != null && maxPrice != null) {
-            plots = plotService.getPlotsByPriceRange(minPrice, maxPrice);
-        } else {
-            plots = plotService.getAllPlots();
-        }
-
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) String plotType
+    ) {
+        List<plot> plots = plotService.searchPlots(title, location, minPrice, maxPrice, plotType);
         return ResponseEntity.ok(plots);
     }
+
 }

@@ -106,4 +106,17 @@ public class PlotService {
                 .orElseThrow(() -> new RuntimeException("Plot not found"));
         plotRepository.delete(plot);
     }
+
+    public List<plot> searchPlots(String title, String location, BigDecimal minPrice, BigDecimal maxPrice, String plotType) {
+        List<plot> allPlots = plotRepository.findAll();
+
+        return allPlots.stream()
+                .filter(p -> title == null || p.getTitle().toLowerCase().contains(title.toLowerCase()))
+                .filter(p -> location == null || p.getLocation().toLowerCase().contains(location.toLowerCase()))
+                .filter(p -> minPrice == null || p.getPrice().compareTo(minPrice) >= 0)
+                .filter(p -> maxPrice == null || p.getPrice().compareTo(maxPrice) <= 0)
+                .filter(p -> plotType == null || p.getPlotType().equalsIgnoreCase(plotType))
+                .toList();
+    }
+
 }
