@@ -127,5 +127,4 @@ public class PlotController {
         List<plot> plots = plotService.searchPlots(title, location, minPrice, maxPrice, plotType);
         return ResponseEntity.ok(plots);
     }
-
 }

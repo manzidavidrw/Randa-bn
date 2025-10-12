@@ -48,7 +48,11 @@ public class plot {
 
     private String location;
     private String size; // e.g., "1000 sq ft"
-    private String plotType; // e.g., "Residential", "Commercial"
+    private String plotType;
+
+    @Column(name = "youtube_link", nullable = true)
+    private String youtubeLink;
+
 
     @PrePersist
     protected void onCreate() {
@@ -104,4 +108,13 @@ public class plot {
 
     public String getPlotType() { return plotType; }
     public void setPlotType(String plotType) { this.plotType = plotType; }
+
+    public String getYoutubeLink() {
+        return youtubeLink;
+    }
+
+    public void setYoutubeLink(String youtubeLink) {
+        this.youtubeLink = youtubeLink;
+    }
+
 }

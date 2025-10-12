@@ -34,7 +34,10 @@ public class PlotService {
         plot.setPlotType(plotRequest.getPlotType());
         plot.setAdmin(admin);
 
-        // Upload images to Cloudinary
+        // ✅ Set optional YouTube link
+        plot.setYoutubeLink(plotRequest.getYoutubeLink());
+
+        // ✅ Upload images to Cloudinary
         List<String> imageUrls = new ArrayList<>();
         if (images != null && !images.isEmpty()) {
             for (MultipartFile image : images) {
@@ -48,6 +51,7 @@ public class PlotService {
 
         return plotRepository.save(plot);
     }
+
 
     public plot updatePlot(Long plotId, PlotRequest plotRequest, List<MultipartFile> newImages) throws IOException {
         plot plot = plotRepository.findById(plotId)

@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 import plot.plot.Repository.AdminRepository;
 import plot.plot.model.Admin;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.UUID;
 
 @Service
 public class AdminService implements UserDetailsService {
@@ -21,6 +23,9 @@ public class AdminService implements UserDetailsService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private EmailService emailService;
 
     public AdminService(AdminRepository adminRepository, PasswordEncoder passwordEncoder) {
         this.adminRepository = adminRepository;
@@ -69,5 +74,49 @@ public class AdminService implements UserDetailsService {
 
     public Admin updateAdmin(Admin admin) {
         return adminRepository.save(admin);
+    }
+
+    public void initiatePasswordReset(String email) {
+        Admin admin = adminRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Email not found"));
+
+        String resetToken = UUID.randomUUID().toString();
+        admin.setResetToken(resetToken);
+        admin.setResetTokenExpiry(LocalDateTime.now().plusHours(1));
+
+        adminRepository.save(admin);
+        emailService.sendPasswordResetEmail(email, resetToken);
+    }
+
+    public boolean resetPassword(String token, String newPassword) {
+        Admin admin = adminRepository.findByResetToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid token"));
+
+        if (admin.getResetTokenExpiry() == null ||
+                admin.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Token has expired");
+        }
+
+        admin.setPassword(passwordEncoder.encode(newPassword));
+        admin.setResetToken(null);
+        admin.setResetTokenExpiry(null);
+
+        adminRepository.save(admin);
+        return true;
+    }
+
+    public boolean validateResetToken(String token) {
+        Admin admin = adminRepository.findByResetToken(token).orElse(null);
+
+        if (admin == null) {
+            return false;
+        }
+
+        if (admin.getResetTokenExpiry() == null ||
+                admin.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+            return false;
+        }
+
+        return true;
     }
 }

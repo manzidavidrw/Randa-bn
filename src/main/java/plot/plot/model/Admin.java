@@ -37,6 +37,12 @@ public class Admin {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "reset_token")
+    private String resetToken;
+
+    @Column(name = "reset_token_expiry")
+    private LocalDateTime resetTokenExpiry;
+
     @OneToMany(mappedBy = "admin", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
     private List<plot> plots;
@@ -77,4 +83,15 @@ public class Admin {
 
     public List<plot> getPlots() { return plots; }
     public void setPlots(List<plot> plots) { this.plots = plots; }
+
+    public String getResetToken() { return resetToken; }
+    public void setResetToken(String resetToken) { this.resetToken = resetToken; }
+
+    public LocalDateTime getResetTokenExpiry() {
+        return resetTokenExpiry;
+    }
+
+    public void setResetTokenExpiry(LocalDateTime resetTokenExpiry) {
+        this.resetTokenExpiry = resetTokenExpiry;
+    }
 }

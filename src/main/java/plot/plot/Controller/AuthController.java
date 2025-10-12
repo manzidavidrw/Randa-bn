@@ -11,9 +11,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import plot.plot.Config.JwtTokenProvider;
 import plot.plot.Service.AdminService;
-import plot.plot.dto.AuthResponse;
-import plot.plot.dto.RegisterRequest;
-import plot.plot.dto.loginRequest;
+import plot.plot.dto.*;
 import plot.plot.model.Admin;
 
 @RestController
@@ -67,6 +65,36 @@ public class AuthController {
             return ResponseEntity.ok("Admin registered successfully");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        try {
+            adminService.initiatePasswordReset(request.getEmail());
+            return ResponseEntity.ok(new ApiResponse("Password reset email sent successfully"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/validate-token")
+    public ResponseEntity<?> validateToken(@RequestParam String token) {
+        boolean isValid = adminService.validateResetToken(token);
+        if (isValid) {
+            return ResponseEntity.ok(new ApiResponse("Token is valid"));
+        } else {
+            return ResponseEntity.badRequest().body(new ApiResponse("Token is invalid or expired"));
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+        try {
+            adminService.resetPassword(request.getToken(), request.getNewPassword());
+            return ResponseEntity.ok(new ApiResponse("Password reset successfully"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage()));
         }
     }
 }

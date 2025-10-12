@@ -24,6 +24,8 @@ public class PlotRequest {
     private String size;
     private String plotType;
 
+    private String youtubeLink;
+
     // Constructors
     public PlotRequest() {}
 
@@ -51,4 +53,7 @@ public class PlotRequest {
 
     public String getPlotType() { return plotType; }
     public void setPlotType(String plotType) { this.plotType = plotType; }
+
+    public String getYoutubeLink() { return youtubeLink; }
+    public void setYoutubeLink(String youtubeLink) { this.youtubeLink = youtubeLink; }
 }
