@@ -1,4 +1,4 @@
-// Updated EmailService.java with fixed HTML email
+// Updated EmailService.java with Brevo SMTP
 package plot.plot.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
