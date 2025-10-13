@@ -77,15 +77,24 @@ public class AdminService implements UserDetailsService {
     }
 
     public void initiatePasswordReset(String email) {
+        // Find the admin by email
         Admin admin = adminRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Email not found"));
 
+        // Generate a reset token and expiry
         String resetToken = UUID.randomUUID().toString();
         admin.setResetToken(resetToken);
         admin.setResetTokenExpiry(LocalDateTime.now().plusHours(1));
 
+        // Save changes to the admin
         adminRepository.save(admin);
-        emailService.sendPasswordResetEmail(email, resetToken);
+
+        // Send the password reset email with email, username, and reset token
+        emailService.sendPasswordResetEmail(
+                admin.getEmail(),        // recipient email
+                admin.getUsername(),     // recipient name for greeting
+                resetToken               // reset token
+        );
     }
 
     public boolean resetPassword(String token, String newPassword) {

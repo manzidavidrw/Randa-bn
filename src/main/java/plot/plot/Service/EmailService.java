@@ -1,216 +1,117 @@
-// Updated EmailService.java with Brevo SMTP
 package plot.plot.Service;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+import org.springframework.web.client.RestTemplate;
 
-import java.io.UnsupportedEncodingException;
+import java.util.*;
 
 @Service
 public class EmailService {
 
-    @Autowired
-    private JavaMailSender mailSender;
+    @Value("${brevo.api.key}")
+    private String brevoApiKey;
+
+    @Value("${brevo.sender.email}")
+    private String senderEmail;
+
+    @Value("${brevo.sender.name}")
+    private String senderName;
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
-    public void sendPasswordResetEmail(String email, String resetToken) {
+    private static final String BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+
+    public void sendPasswordResetEmail(String email, String username, String resetToken) {
         try {
             String resetLink = frontendUrl + "/forgot-password?token=" + resetToken;
 
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            // Prepare email body
+            Map<String, Object> body = new HashMap<>();
+            body.put("sender", Map.of("name", senderName, "email", senderEmail));
+            body.put("to", List.of(Map.of("email", email)));
+            body.put("subject", "Reset Your Password - Randa Real Estate");
+            body.put("htmlContent", buildPasswordResetEmailTemplate(resetLink, username));
 
-            helper.setTo(email);
-            helper.setSubject("Reset Your Password - Randa Real Estate");
-            helper.setFrom("manzi2020d@gmail.com", "Randa Real Estate");
+            // Set headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("api-key", brevoApiKey);
 
-            // HTML email content with inline CSS
-            String htmlContent = buildPasswordResetEmailTemplate(resetLink, email);
-            helper.setText(htmlContent, true); // true = isHtml
+            // Send request
+            RestTemplate restTemplate = new RestTemplate();
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+            ResponseEntity<String> response = restTemplate.exchange(
+                    BREVO_API_URL,
+                    HttpMethod.POST,
+                    request,
+                    String.class
+            );
 
-            mailSender.send(message);
-        } catch (MessagingException | UnsupportedEncodingException e) {
+            System.out.println("DEBUG: Password reset email sent successfully to: " + email);
+            System.out.println("DEBUG Response: " + response.getBody());
+
+        } catch (Exception e) {
+            System.out.println("DEBUG: Failed to send email: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Failed to send password reset email", e);
         }
     }
 
-    private String buildPasswordResetEmailTemplate(String resetLink, String email) {
+
+    private String buildPasswordResetEmailTemplate(String resetLink, String username) {
         return "<!DOCTYPE html>\n" +
                 "<html>\n" +
                 "<head>\n" +
                 "    <meta charset=\"UTF-8\">\n" +
                 "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
                 "    <style>\n" +
-                "        * {\n" +
-                "            margin: 0;\n" +
-                "            padding: 0;\n" +
-                "            box-sizing: border-box;\n" +
-                "        }\n" +
-                "        body {\n" +
-                "            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n" +
-                "            background-color: #f5f5f5;\n" +
-                "            padding: 20px;\n" +
-                "        }\n" +
-                "        .email-container {\n" +
-                "            max-width: 600px;\n" +
-                "            margin: 0 auto;\n" +
-                "            background-color: white;\n" +
-                "            border-radius: 12px;\n" +
-                "            overflow: hidden;\n" +
-                "            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);\n" +
-                "        }\n" +
-                "        .email-header {\n" +
-                "            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);\n" +
-                "            color: white;\n" +
-                "            padding: 40px 20px;\n" +
-                "            text-align: center;\n" +
-                "        }\n" +
-                "        .email-header h1 {\n" +
-                "            font-size: 24px;\n" +
-                "            font-weight: 700;\n" +
-                "            margin-bottom: 5px;\n" +
-                "        }\n" +
-                "        .email-header p {\n" +
-                "            font-size: 14px;\n" +
-                "            opacity: 0.9;\n" +
-                "        }\n" +
-                "        .email-body {\n" +
-                "            padding: 40px;\n" +
-                "            color: #333;\n" +
-                "        }\n" +
-                "        .greeting {\n" +
-                "            font-size: 16px;\n" +
-                "            margin-bottom: 20px;\n" +
-                "            line-height: 1.6;\n" +
-                "        }\n" +
-                "        .greeting strong {\n" +
-                "            color: #007bff;\n" +
-                "        }\n" +
-                "        .message {\n" +
-                "            font-size: 14px;\n" +
-                "            color: #666;\n" +
-                "            margin-bottom: 30px;\n" +
-                "            line-height: 1.6;\n" +
-                "        }\n" +
-                "        .reset-button-container {\n" +
-                "            text-align: center;\n" +
-                "            margin: 35px 0;\n" +
-                "        }\n" +
-                "        .reset-button {\n" +
-                "            display: inline-block;\n" +
-                "            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);\n" +
-                "            color: white;\n" +
-                "            padding: 16px 40px;\n" +
-                "            text-decoration: none;\n" +
-                "            border-radius: 8px;\n" +
-                "            font-weight: 700;\n" +
-                "            font-size: 16px;\n" +
-                "            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);\n" +
-                "            mso-padding-alt: 16px 40px;\n" +
-                "            border: 2px solid #007bff;\n" +
-                "        }\n" +
-                "        .reset-link {\n" +
-                "            background-color: #f5f5f5;\n" +
-                "            padding: 15px;\n" +
-                "            border-radius: 8px;\n" +
-                "            margin: 25px 0;\n" +
-                "            word-break: break-all;\n" +
-                "        }\n" +
-                "        .reset-link p {\n" +
-                "            font-size: 12px;\n" +
-                "            color: #999;\n" +
-                "            margin-bottom: 8px;\n" +
-                "        }\n" +
-                "        .reset-link a {\n" +
-                "            color: #007bff;\n" +
-                "            font-size: 12px;\n" +
-                "            text-decoration: none;\n" +
-                "        }\n" +
-                "        .security-note {\n" +
-                "            background-color: #fff3cd;\n" +
-                "            border-left: 4px solid #ffc107;\n" +
-                "            padding: 15px;\n" +
-                "            margin: 25px 0;\n" +
-                "            border-radius: 4px;\n" +
-                "            font-size: 13px;\n" +
-                "            color: #856404;\n" +
-                "        }\n" +
-                "        .security-note strong {\n" +
-                "            display: block;\n" +
-                "            margin-bottom: 5px;\n" +
-                "        }\n" +
-                "        .email-footer {\n" +
-                "            background-color: #f9f9f9;\n" +
-                "            padding: 20px;\n" +
-                "            text-align: center;\n" +
-                "            border-top: 1px solid #eee;\n" +
-                "        }\n" +
-                "        .footer-text {\n" +
-                "            font-size: 12px;\n" +
-                "            color: #999;\n" +
-                "            line-height: 1.6;\n" +
-                "        }\n" +
-                "        .footer-text a {\n" +
-                "            color: #007bff;\n" +
-                "            text-decoration: none;\n" +
-                "        }\n" +
+                "        * { margin: 0; padding: 0; box-sizing: border-box; }\n" +
+                "        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5; padding: 20px; }\n" +
+                "        .email-container { max-width: 600px; margin: 0 auto; background-color: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }\n" +
+                "        .email-header { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 40px 20px; text-align: center; }\n" +
+                "        .email-header h1 { font-size: 24px; font-weight: 700; margin-bottom: 5px; }\n" +
+                "        .email-header p { font-size: 14px; opacity: 0.9; }\n" +
+                "        .email-body { padding: 40px; color: #333; }\n" +
+                "        .greeting { font-size: 16px; margin-bottom: 20px; line-height: 1.6; }\n" +
+                "        .greeting strong { color: #007bff; }\n" +
+                "        .message { font-size: 14px; color: #666; margin-bottom: 30px; line-height: 1.6; }\n" +
+                "        .reset-button-container { text-align: center; margin: 35px 0; }\n" +
+                "        .reset-button { display: inline-block; background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 12px rgba(0,123,255,0.3); border: 2px solid #007bff; }\n" +
+                "        .reset-link { background-color: #f5f5f5; padding: 15px; border-radius: 8px; margin: 25px 0; word-break: break-all; }\n" +
+                "        .reset-link p { font-size: 12px; color: #999; margin-bottom: 8px; }\n" +
+                "        .reset-link a { color: #007bff; font-size: 12px; text-decoration: none; }\n" +
+                "        .security-note { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 25px 0; border-radius: 4px; font-size: 13px; color: #856404; }\n" +
+                "        .email-footer { background-color: #f9f9f9; padding: 20px; text-align: center; border-top: 1px solid #eee; }\n" +
+                "        .footer-text { font-size: 12px; color: #999; line-height: 1.6; }\n" +
+                "        .footer-text a { color: #007bff; text-decoration: none; }\n" +
                 "    </style>\n" +
                 "</head>\n" +
                 "<body>\n" +
                 "    <div class=\"email-container\">\n" +
-                "        <!-- Header -->\n" +
                 "        <div class=\"email-header\">\n" +
                 "            <h1>🔐 Password Reset</h1>\n" +
                 "            <p>Randa Real Estate</p>\n" +
                 "        </div>\n" +
-                "        \n" +
-                "        <!-- Body -->\n" +
                 "        <div class=\"email-body\">\n" +
-                "            <div class=\"greeting\">\n" +
-                "                Hello <strong>" + email + "</strong>,\n" +
-                "            </div>\n" +
-                "            \n" +
-                "            <div class=\"message\">\n" +
-                "                We received a request to reset your password for your Randa Real Estate account. \n" +
-                "                If you didn't make this request, you can safely ignore this email.\n" +
-                "            </div>\n" +
-                "            \n" +
-                "            <!-- Reset Button -->\n" +
+                "            <div class=\"greeting\">Hello <strong>" + username + "</strong>,</div>\n" +
+                "            <div class=\"message\">We received a request to reset your password for your Randa Real Estate account. If you didn't make this request, you can safely ignore this email.</div>\n" +
                 "            <div class=\"reset-button-container\">\n" +
-                "                <a href=\"" + resetLink + "\" class=\"reset-button\" style=\"display: inline-block; background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);\">Reset Your Password</a>\n" +
+                "                <a href=\"" + resetLink + "\" class=\"reset-button\">Reset Your Password</a>\n" +
                 "            </div>\n" +
-                "            \n" +
-                "            <div class=\"message\">\n" +
-                "                Or copy and paste this link in your browser:\n" +
-                "            </div>\n" +
-                "            \n" +
-                "            <!-- Reset Link -->\n" +
+                "            <div class=\"message\">Or copy and paste this link in your browser:</div>\n" +
                 "            <div class=\"reset-link\">\n" +
                 "                <p>Reset Link:</p>\n" +
                 "                <a href=\"" + resetLink + "\" target=\"_blank\">" + resetLink + "</a>\n" +
                 "            </div>\n" +
-                "            \n" +
-                "            <!-- Security Note -->\n" +
                 "            <div class=\"security-note\">\n" +
                 "                <strong>🔒 Security Notice</strong>\n" +
-                "                This link will expire in <strong>1 hour</strong>. If the link expires, you can request a new password reset. \n" +
-                "                Never share this link with anyone.\n" +
+                "                This link will expire in <strong>1 hour</strong>. If the link expires, you can request a new password reset. Never share this link with anyone.\n" +
                 "            </div>\n" +
-                "            \n" +
-                "            <div class=\"message\">\n" +
-                "                If you have any questions or didn't request this password reset, please contact our support team.\n" +
-                "            </div>\n" +
+                "            <div class=\"message\">If you have any questions or didn’t request this password reset, please contact our support team.</div>\n" +
                 "        </div>\n" +
-                "        \n" +
-                "        <!-- Footer -->\n" +
                 "        <div class=\"email-footer\">\n" +
                 "            <div class=\"footer-text\">\n" +
                 "                <p>© 2025 Randa Real Estate. All rights reserved.</p>\n" +
@@ -223,30 +124,7 @@ public class EmailService {
                 "</html>";
     }
 
-    // Alternative: Simple text email for backup
-    public void sendPasswordResetEmailPlainText(String email, String resetToken) {
-        String resetLink = frontendUrl + "/forgot-password?token=" + resetToken;
-
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject("Reset Your Password - Randa Real Estate");
-        message.setFrom("noreply@randarealestate.com");
-        message.setText("Hello,\n\n" +
-                "We received a request to reset your password for your Randa Real Estate account.\n\n" +
-                "Click the link below to reset your password:\n" +
-                resetLink + "\n\n" +
-                "This link will expire in 1 hour.\n\n" +
-                "If you didn't request this, you can safely ignore this email.\n\n" +
-                "For security reasons, never share this link with anyone.\n\n" +
-                "Best regards,\n" +
-                "Randa Real Estate Team");
-
-        mailSender.send(message);
-    }
-
-    // Verify email exists in database before sending reset email
     public boolean emailExists(String email) {
-        // This will be checked in AdminService before calling this method
         return true;
     }
 }
