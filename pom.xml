@@ -50,13 +50,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.github.sendinblue</groupId>
-			<artifactId>APIv3-java</artifactId>
-			<version>master</version> <!-- or use a tag like v3.0.0 -->
-		</dependency>
-
-
-		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
